@@ -71,7 +71,7 @@ const App: React.FC = () => {
     initAppData();
   }, [isFirebaseReady]);
 
-  const handleLogin = async (username: string) => {
+  const handleLogin = async (username: string, additionalData?: Partial<User>) => {
     setLoading(true);
     try {
       let existingUser = await getUserByUsername(username);
@@ -81,14 +81,19 @@ const App: React.FC = () => {
         const newUser: User = {
           id: 'u_' + Math.floor(Math.random() * 1000000), // Better ID gen
           username: username,
-          fullName: username.charAt(0).toUpperCase() + username.slice(1),
-          email: `${username}@polis.game`,
+          fullName: additionalData?.fullName || username.charAt(0).toUpperCase() + username.slice(1),
+          email: additionalData?.email || `${username}@polis.game`,
+          avatarUrl: additionalData?.avatarUrl,
           level: 1,
           influence: 100,
-          achievements: []
+          achievements: [],
+          ...additionalData // Merge any other provided fields
         };
         await createUser(newUser);
         existingUser = newUser;
+      } else if (additionalData) {
+        // Optional: Update existing user with new Google info if missing?
+        // For now, let's just log them in.
       }
 
       setUser(existingUser);

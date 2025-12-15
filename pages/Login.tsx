@@ -7,7 +7,7 @@ import Input from '../components/Input';
 import { Icons } from '../constants';
 
 interface LoginProps {
-  onLogin: (username: string) => void;
+  onLogin: (username: string, additionalData?: any) => void;
 }
 
 const Login: React.FC<LoginProps> = ({ onLogin }) => {
@@ -59,7 +59,11 @@ const Login: React.FC<LoginProps> = ({ onLogin }) => {
         ? user.email.split('@')[0]
         : (user.displayName || "User").replace(/\s+/g, '_');
 
-      onLogin(polisUsername);
+      onLogin(polisUsername, {
+        email: user.email,
+        fullName: user.displayName,
+        avatarUrl: user.photoURL
+      });
       navigate('/');
     } catch (error: any) {
       console.error("Google Sign-In Error", error);

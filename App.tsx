@@ -8,8 +8,9 @@ import Profile from './pages/Profile';
 import Lobby from './pages/Lobby';
 import ScenarioRoom from './pages/ScenarioRoom';
 import GameSession from './pages/GameSession';
+import AdminDashboard from './pages/AdminDashboard';
 import Layout from './components/Layout';
-import { User } from './types';
+import { User, UserRole } from './types';
 import { getUserByUsername, createUser, updateUser, seedParties, getStoredParties } from './services/firestoreService';
 import { getParties } from './services/dataService'; // For seeding source
 
@@ -78,11 +79,20 @@ const App: React.FC = () => {
 
       if (!existingUser) {
         // Create new user
+
+        // Determine Role
+        const adminHandles = ['eduardomatheusfigueira'];
+        const isOwner = adminHandles.includes(username.toLowerCase()) ||
+          (additionalData?.email && adminHandles.includes(additionalData.email.split('@')[0].toLowerCase()));
+
+        const role: UserRole = isOwner ? 'ADMIN' : 'PLAYER';
+
         const newUser: User = {
           id: 'u_' + Math.floor(Math.random() * 1000000), // Better ID gen
           username: username,
           fullName: additionalData?.fullName || username.charAt(0).toUpperCase() + username.slice(1),
           email: additionalData?.email || `${username}@polis.game`,
+          role: role,
           avatarUrl: additionalData?.avatarUrl,
           level: 1,
           influence: 100,
@@ -143,7 +153,12 @@ const App: React.FC = () => {
 
           <Route
             path="/lobby"
-            element={user ? <Lobby /> : <Navigate to="/login" />}
+            element={user ? <Lobby user={user} /> : <Navigate to="/login" />}
+          />
+
+          <Route
+            path="/admin"
+            element={user ? <AdminDashboard user={user} /> : <Navigate to="/login" />}
           />
 
           <Route

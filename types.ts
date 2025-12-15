@@ -1,8 +1,11 @@
+export type UserRole = 'PLAYER' | 'MANAGER' | 'ADMIN';
+
 export interface User {
   id: string;
   username: string;
   fullName: string;
   email: string;
+  role: UserRole; // Permissions level
   avatarUrl?: string;
   bio?: string;
   level: number;

@@ -6,10 +6,16 @@ import Button from '../components/Button';
 import Input from '../components/Input';
 import { Icons } from '../constants';
 
-const Lobby: React.FC = () => {
+interface LobbyProps {
+  user: { role: 'PLAYER' | 'MANAGER' | 'ADMIN' } | null;
+}
+
+const Lobby: React.FC<LobbyProps> = ({ user }) => {
   const navigate = useNavigate();
   const [rooms, setRooms] = useState<GameRoom[]>([]);
   const [isCreating, setIsCreating] = useState(false);
+
+  const canCreate = user?.role === 'MANAGER' || user?.role === 'ADMIN';
 
   // Create Room Form State
   const [newRoomName, setNewRoomName] = useState('');
@@ -85,9 +91,11 @@ const Lobby: React.FC = () => {
           <h1 className="text-2xl font-serif font-bold text-white">Political Scenarios</h1>
           <p className="text-sm text-slate-400">Join a lobby or create your own simulation.</p>
         </div>
-        <Button onClick={() => setIsCreating(!isCreating)} className="flex items-center gap-2">
-          <Icons.Plus className="w-4 h-4" /> Create Scenario
-        </Button>
+        {canCreate && (
+          <Button onClick={() => setIsCreating(!isCreating)} className="flex items-center gap-2">
+            <Icons.Plus className="w-4 h-4" /> Create Scenario
+          </Button>
+        )}
       </div>
 
       {/* Create Room Modal/Expandable */}
@@ -221,8 +229,8 @@ const Lobby: React.FC = () => {
             <div className="p-6 space-y-4 flex-1">
               <div className="flex justify-between items-start">
                 <span className={`text-xs font-bold px-2 py-1 rounded-full ${room.status === 'WAITING' ? 'bg-green-900/50 text-green-400' :
-                    room.status === 'IN_PROGRESS' ? 'bg-amber-900/50 text-amber-400' :
-                      'bg-slate-800 text-slate-500'
+                  room.status === 'IN_PROGRESS' ? 'bg-amber-900/50 text-amber-400' :
+                    'bg-slate-800 text-slate-500'
                   }`}>
                   {room.status === 'WAITING' ? 'Recruiting' : 'In Session'}
                 </span>

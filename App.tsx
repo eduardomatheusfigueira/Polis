@@ -1,5 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { HashRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
+import { signInAnonymously, onAuthStateChanged } from 'firebase/auth'; // Import auth listener
+import { auth } from './services/firebase'; // Import auth instance
 import Login from './pages/Login';
 import Home from './pages/Home';
 import Profile from './pages/Profile';
@@ -14,35 +16,60 @@ import { getParties } from './services/dataService'; // For seeding source
 const App: React.FC = () => {
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
+  const [isFirebaseReady, setIsFirebaseReady] = useState(false);
 
+  // 1. Initialize Firebase Auth
   useEffect(() => {
-    const initApp = async () => {
-      // 1. Seed static data if needed
-      try {
-        await seedParties(getParties());
-      } catch (error) {
-        console.error("Failed to seed parties:", error);
+    const unsubscribe = onAuthStateChanged(auth, (authUser) => {
+      if (authUser) {
+        console.log("Firebase Auth Ready:", authUser.uid);
+        setIsFirebaseReady(true);
+      } else {
+        console.log("Signing in anonymously...");
+        signInAnonymously(auth).catch((error) => {
+          console.error("Anonymous auth failed:", error);
+        });
       }
+    });
+    return () => unsubscribe();
+  }, []);
 
-      // 2. Check for existing session
-      const storedUsername = localStorage.getItem('polis_username');
-      if (storedUsername) {
+  // 2. Initialize App Data (Only after Firebase is ready)
+  useEffect(() => {
+    if (!isFirebaseReady) return;
+
+    const initAppData = async () => {
+      try {
+        // Seed static data
         try {
-          const fetchedUser = await getUserByUsername(storedUsername);
-          if (fetchedUser) {
-            setUser(fetchedUser);
-          } else {
-            localStorage.removeItem('polis_username');
-          }
+          await seedParties(getParties());
         } catch (error) {
-          console.error("Failed to restore session:", error);
+          console.error("Failed to seed parties (check rules):", error);
         }
+
+        // Check for existing session
+        const storedUsername = localStorage.getItem('polis_username');
+        if (storedUsername) {
+          try {
+            const fetchedUser = await getUserByUsername(storedUsername);
+            if (fetchedUser) {
+              setUser(fetchedUser);
+            } else {
+              localStorage.removeItem('polis_username');
+            }
+          } catch (error) {
+            console.error("Failed to restore session:", error);
+          }
+        }
+      } catch (error) {
+        console.error("App initialization error:", error);
+      } finally {
+        setLoading(false);
       }
-      setLoading(false);
     };
 
-    initApp();
-  }, []);
+    initAppData();
+  }, [isFirebaseReady]);
 
   const handleLogin = async (username: string) => {
     setLoading(true);

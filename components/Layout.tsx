@@ -27,7 +27,7 @@ const Layout: React.FC<LayoutProps> = ({ children, user, onLogout }) => {
       <nav className="border-b border-slate-800 bg-slate-900 sticky top-0 z-50">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex items-center justify-between h-16">
-            
+
             {/* Logo */}
             <div className="flex-shrink-0 flex items-center cursor-pointer" onClick={() => navigate('/')}>
               <span className="text-2xl font-serif font-bold text-amber-500 tracking-wider">POLIS</span>
@@ -36,17 +36,17 @@ const Layout: React.FC<LayoutProps> = ({ children, user, onLogout }) => {
             {/* Desktop Menu */}
             <div className="hidden md:block">
               <div className="ml-10 flex items-baseline space-x-4">
-                <Link 
-                  to="/" 
+                <Link
+                  to="/"
                   className={`px-3 py-2 rounded-md text-sm font-medium transition-colors ${isActive('/') ? 'bg-slate-800 text-amber-500' : 'text-slate-300 hover:text-white hover:bg-slate-800'}`}
                 >
                   <div className="flex items-center gap-2">
                     <Icons.Home className="w-4 h-4" /> Home
                   </div>
                 </Link>
-                
-                <Link 
-                  to="/lobby" 
+
+                <Link
+                  to="/lobby"
                   className={`px-3 py-2 rounded-md text-sm font-medium transition-colors ${isActive('/lobby') ? 'bg-slate-800 text-amber-500' : 'text-slate-300 hover:text-white hover:bg-slate-800'}`}
                 >
                   <div className="flex items-center gap-2">
@@ -54,14 +54,25 @@ const Layout: React.FC<LayoutProps> = ({ children, user, onLogout }) => {
                   </div>
                 </Link>
 
-                <Link 
-                  to="/profile" 
+                <Link
+                  to="/profile"
                   className={`px-3 py-2 rounded-md text-sm font-medium transition-colors ${isActive('/profile') ? 'bg-slate-800 text-amber-500' : 'text-slate-300 hover:text-white hover:bg-slate-800'}`}
                 >
                   <div className="flex items-center gap-2">
                     <Icons.User className="w-4 h-4" /> Profile
                   </div>
                 </Link>
+
+                {user?.role === 'ADMIN' && (
+                  <Link
+                    to="/admin"
+                    className={`px-3 py-2 rounded-md text-sm font-medium transition-colors ${isActive('/admin') ? 'bg-slate-800 text-amber-500' : 'text-slate-300 hover:text-white hover:bg-slate-800'}`}
+                  >
+                    <div className="flex items-center gap-2">
+                      <Icons.Award className="w-4 h-4" /> Dashboard
+                    </div>
+                  </Link>
+                )}
               </div>
             </div>
 
@@ -70,9 +81,9 @@ const Layout: React.FC<LayoutProps> = ({ children, user, onLogout }) => {
               <div className="flex items-center gap-4">
                 {user && (
                   <div className="flex items-center gap-2">
-                    <img 
-                      src={user.avatarUrl || `https://ui-avatars.com/api/?name=${user.username}&background=random`} 
-                      alt="Avatar" 
+                    <img
+                      src={user.avatarUrl || `https://ui-avatars.com/api/?name=${user.username}&background=random`}
+                      alt="Avatar"
                       className="w-8 h-8 rounded-full border border-slate-600"
                     />
                     <span className="text-sm font-medium text-amber-100">{user.username}</span>
@@ -102,6 +113,9 @@ const Layout: React.FC<LayoutProps> = ({ children, user, onLogout }) => {
               <Link to="/" className="block px-3 py-2 rounded-md text-base font-medium text-white hover:bg-slate-800">Home</Link>
               <Link to="/lobby" className="block px-3 py-2 rounded-md text-base font-medium text-slate-300 hover:text-white hover:bg-slate-800">Scenarios</Link>
               <Link to="/profile" className="block px-3 py-2 rounded-md text-base font-medium text-slate-300 hover:text-white hover:bg-slate-800">Profile</Link>
+              {user?.role === 'ADMIN' && (
+                <Link to="/admin" className="block px-3 py-2 rounded-md text-base font-medium text-amber-500 hover:text-amber-400 hover:bg-slate-800">Admin Dashboard</Link>
+              )}
               <button onClick={onLogout} className="w-full text-left block px-3 py-2 rounded-md text-base font-medium text-red-400 hover:text-red-300 hover:bg-slate-800">Logout</button>
             </div>
           </div>

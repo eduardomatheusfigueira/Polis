@@ -55,6 +55,16 @@ export const updateUser = async (user: User): Promise<void> => {
     await updateDoc(userRef, { ...user });
 };
 
+export const getAllUsers = async (): Promise<User[]> => {
+    const querySnapshot = await getDocs(collection(db, USERS_COLLECTION));
+    return querySnapshot.docs.map(doc => doc.data() as User);
+};
+
+export const updateUserRole = async (userId: string, role: User['role']): Promise<void> => {
+    const userRef = doc(db, USERS_COLLECTION, userId);
+    await updateDoc(userRef, { role });
+};
+
 // --- GAME ROOM MANAGEMENT ---
 
 export const subscribeToRooms = (callback: (rooms: GameRoom[]) => void) => {

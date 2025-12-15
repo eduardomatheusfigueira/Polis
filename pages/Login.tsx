@@ -1,5 +1,7 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { signInWithPopup } from 'firebase/auth';
+import { auth, googleProvider } from '../services/firebase';
 import Button from '../components/Button';
 import Input from '../components/Input';
 import { Icons } from '../constants';
@@ -12,7 +14,7 @@ const Login: React.FC<LoginProps> = ({ onLogin }) => {
   const navigate = useNavigate();
   const [isRegistering, setIsRegistering] = useState(false);
   const [step, setStep] = useState<'form' | 'verify'>('form'); // For email verification simulation
-  
+
   // Form State
   const [email, setEmail] = useState('');
   const [username, setUsername] = useState('');
@@ -40,7 +42,7 @@ const Login: React.FC<LoginProps> = ({ onLogin }) => {
       // Mock Login
       if (email && password) {
         // Use part of email as username if logging in, or just a dummy one
-        onLogin(email.split('@')[0]); 
+        onLogin(email.split('@')[0]);
         navigate('/');
       } else {
         setError("Invalid credentials.");
@@ -48,10 +50,21 @@ const Login: React.FC<LoginProps> = ({ onLogin }) => {
     }
   };
 
-  const handleGoogleLogin = () => {
-    // Mock Google Login
-    onLogin('Google_User_' + Math.floor(Math.random() * 1000));
-    navigate('/');
+  const handleGoogleLogin = async () => {
+    try {
+      const result = await signInWithPopup(auth, googleProvider);
+      const user = result.user;
+      // Use email handle or display name as the basis for the game username
+      const polisUsername = user.email
+        ? user.email.split('@')[0]
+        : (user.displayName || "User").replace(/\s+/g, '_');
+
+      onLogin(polisUsername);
+      navigate('/');
+    } catch (error: any) {
+      console.error("Google Sign-In Error", error);
+      setError("Google Sign-In failed: " + error.message);
+    }
   };
 
   const handleVerification = () => {
@@ -64,11 +77,11 @@ const Login: React.FC<LoginProps> = ({ onLogin }) => {
       <div className="min-h-screen flex items-center justify-center bg-slate-950 p-4">
         <div className="bg-slate-900 p-8 rounded-lg shadow-2xl border border-slate-800 max-w-md w-full text-center">
           <div className="mx-auto w-16 h-16 bg-amber-900/30 rounded-full flex items-center justify-center mb-4">
-             <Icons.Mail className="w-8 h-8 text-amber-500" />
+            <Icons.Mail className="w-8 h-8 text-amber-500" />
           </div>
           <h2 className="text-2xl font-serif font-bold text-white mb-2">Check your Email</h2>
           <p className="text-slate-400 mb-6">
-            We've sent a verification link to <span className="text-white font-medium">{email}</span>. 
+            We've sent a verification link to <span className="text-white font-medium">{email}</span>.
             Please confirm your account to continue.
           </p>
           <div className="space-y-3">
@@ -87,7 +100,7 @@ const Login: React.FC<LoginProps> = ({ onLogin }) => {
   return (
     <div className="min-h-screen flex items-center justify-center bg-slate-950 p-4 bg-[radial-gradient(ellipse_at_top_right,_var(--tw-gradient-stops))] from-slate-900 via-slate-950 to-black">
       <div className="w-full max-w-md bg-slate-900 rounded-xl shadow-2xl border border-slate-800 overflow-hidden">
-        
+
         {/* Header */}
         <div className="px-8 py-6 border-b border-slate-800 bg-slate-900/50">
           <h1 className="text-3xl font-serif font-bold text-center text-amber-500 tracking-widest mb-2">POLIS</h1>
@@ -99,45 +112,45 @@ const Login: React.FC<LoginProps> = ({ onLogin }) => {
         {/* Form */}
         <div className="p-8">
           <form onSubmit={handleAuth} className="space-y-4">
-            
+
             {isRegistering && (
               <>
-                <Input 
-                  label="Full Name" 
-                  placeholder="John Doe" 
+                <Input
+                  label="Full Name"
+                  placeholder="John Doe"
                   value={fullName}
                   onChange={(e) => setFullName(e.target.value)}
                 />
-                <Input 
-                  label="Username" 
-                  placeholder="Senator_Doe" 
+                <Input
+                  label="Username"
+                  placeholder="Senator_Doe"
                   value={username}
                   onChange={(e) => setUsername(e.target.value)}
                 />
               </>
             )}
 
-            <Input 
-              type="email" 
-              label="Email Address" 
-              placeholder="you@example.com" 
+            <Input
+              type="email"
+              label="Email Address"
+              placeholder="you@example.com"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
             />
-            
-            <Input 
-              type="password" 
-              label="Password" 
-              placeholder="••••••••" 
+
+            <Input
+              type="password"
+              label="Password"
+              placeholder="••••••••"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
             />
 
             {isRegistering && (
-              <Input 
-                type="password" 
-                label="Confirm Password" 
-                placeholder="••••••••" 
+              <Input
+                type="password"
+                label="Confirm Password"
+                placeholder="••••••••"
                 value={confirmPassword}
                 onChange={(e) => setConfirmPassword(e.target.value)}
               />
@@ -172,7 +185,7 @@ const Login: React.FC<LoginProps> = ({ onLogin }) => {
             <span className="text-slate-400">
               {isRegistering ? "Already have an account?" : "New to Polis?"}
             </span>
-            <button 
+            <button
               onClick={() => {
                 setIsRegistering(!isRegistering);
                 setError('');

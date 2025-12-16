@@ -133,6 +133,10 @@ export const getGameRoom = async (roomId: string): Promise<GameRoom | null> => {
     return null;
 };
 
+export const deleteGameRoom = async (roomId: string): Promise<void> => {
+    await deleteDoc(doc(db, ROOMS_COLLECTION, roomId));
+};
+
 // --- GAME SESSION MANAGEMENT ---
 
 export const getGameSession = async (roomId: string): Promise<GameSessionState | null> => {
@@ -163,17 +167,39 @@ export const subscribeToSession = (roomId: string, callback: (session: GameSessi
 
 export const seedParties = async (parties: PoliticalParty[]) => {
     const batch = writeBatch(db);
+    // ... existing ...
+};
 
-    // Checking if parties exist first to avoid overwrite loops if deemed necessary, 
-    // but for seeding we can just overwrite or check count.
-    const snapshot = await getDocs(collection(db, PARTIES_COLLECTION));
-    if (snapshot.empty) {
-        console.log("Seeding parties...");
-        for (const party of parties) {
-            batch.set(doc(db, PARTIES_COLLECTION, party.id), party);
-        }
-        await batch.commit();
-    }
+// --- CONTENT MANAGEMENT (Parties & Archetypes) ---
+
+export const getParties = (callback: (parties: PoliticalParty[]) => void) => {
+    return onSnapshot(collection(db, PARTIES_COLLECTION), (snapshot) => {
+        const parties = snapshot.docs.map(doc => doc.data() as PoliticalParty);
+        callback(parties);
+    });
+};
+
+export const addParty = async (party: PoliticalParty): Promise<void> => {
+    await setDoc(doc(db, PARTIES_COLLECTION, party.id), party);
+};
+
+export const deleteParty = async (partyId: string): Promise<void> => {
+    await deleteDoc(doc(db, PARTIES_COLLECTION, partyId));
+};
+
+export const getArchetypes = (callback: (archetypes: Archetype[]) => void) => {
+    return onSnapshot(collection(db, ARCHETYPES_COLLECTION), (snapshot) => {
+        const archetypes = snapshot.docs.map(doc => doc.data() as Archetype);
+        callback(archetypes);
+    });
+};
+
+export const addArchetype = async (archetype: Archetype): Promise<void> => {
+    await setDoc(doc(db, ARCHETYPES_COLLECTION, archetype.id), archetype);
+};
+
+export const deleteArchetype = async (id: string): Promise<void> => {
+    await deleteDoc(doc(db, ARCHETYPES_COLLECTION, id));
 };
 
 export const getStoredParties = async (): Promise<PoliticalParty[]> => {

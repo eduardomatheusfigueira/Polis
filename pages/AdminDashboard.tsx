@@ -1,9 +1,15 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { User, UserRole, NewsItem } from '../types';
+import { User, UserRole, NewsItem, GameRoom, PoliticalParty, Archetype } from '../types';
 import Button from '../components/Button';
 import { Icons } from '../constants';
-import { getAllUsers, updateUserRole, addNews, deleteNews, getLiveNews } from '../services/firestoreService';
+import {
+    getAllUsers, updateUserRole,
+    addNews, deleteNews, getLiveNews,
+    subscribeToRooms, deleteGameRoom,
+    getParties, addParty, deleteParty,
+    getArchetypes, addArchetype, deleteArchetype
+} from '../services/firestoreService';
 
 interface AdminDashboardProps {
     user: User;
@@ -11,9 +17,12 @@ interface AdminDashboardProps {
 
 const AdminDashboard: React.FC<AdminDashboardProps> = ({ user }) => {
     const navigate = useNavigate();
-    const [activeTab, setActiveTab] = useState<'OVERVIEW' | 'USERS' | 'NEWS'>('OVERVIEW');
+    const [activeTab, setActiveTab] = useState<'OVERVIEW' | 'USERS' | 'NEWS' | 'SCENARIOS' | 'CONTENT'>('OVERVIEW');
     const [users, setUsers] = useState<User[]>([]);
     const [news, setNews] = useState<NewsItem[]>([]);
+    const [rooms, setRooms] = useState<GameRoom[]>([]);
+    const [parties, setParties] = useState<PoliticalParty[]>([]);
+    const [archetypes, setArchetypes] = useState<Archetype[]>([]);
     const [isLoading, setIsLoading] = useState(false);
 
     // Form State for News
@@ -32,6 +41,15 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ user }) => {
                 setNews(items);
             });
             return () => unsubscribe();
+        } else if (activeTab === 'SCENARIOS') {
+            const unsubscribe = subscribeToRooms((fetchedRooms) => {
+                setRooms(fetchedRooms);
+            });
+            return () => unsubscribe();
+        } else if (activeTab === 'CONTENT') {
+            const unsubParties = getParties(setParties);
+            const unsubArchs = getArchetypes(setArchetypes);
+            return () => { unsubParties(); unsubArchs(); };
         }
     }, [activeTab]);
 
@@ -85,6 +103,26 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ user }) => {
         }
     };
 
+    const handleDeleteRoom = async (roomId: string) => {
+        if (!window.confirm("Are you sure you want to delete this scenario? This action cannot be undone.")) return;
+        try {
+            await deleteGameRoom(roomId);
+        } catch (error) {
+            console.error("Error deleting room:", error);
+            alert("Failed to delete room.");
+        }
+    };
+
+    const handleDeleteParty = async (id: string) => {
+        if (!window.confirm("Delete party?")) return;
+        await deleteParty(id);
+    };
+
+    const handleDeleteArchetype = async (id: string) => {
+        if (!window.confirm("Delete archetype?")) return;
+        await deleteArchetype(id);
+    };
+
     if (user.role !== 'ADMIN') {
         return (
             <div className="flex flex-col items-center justify-center min-h-[50vh] text-center">
@@ -106,6 +144,8 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ user }) => {
                     <Button variant={activeTab === 'OVERVIEW' ? 'primary' : 'ghost'} onClick={() => setActiveTab('OVERVIEW')}>Overview</Button>
                     <Button variant={activeTab === 'USERS' ? 'primary' : 'ghost'} onClick={() => setActiveTab('USERS')}>Users</Button>
                     <Button variant={activeTab === 'NEWS' ? 'primary' : 'ghost'} onClick={() => setActiveTab('NEWS')}>News</Button>
+                    <Button variant={activeTab === 'SCENARIOS' ? 'primary' : 'ghost'} onClick={() => setActiveTab('SCENARIOS')}>Scenarios</Button>
+                    <Button variant={activeTab === 'CONTENT' ? 'primary' : 'ghost'} onClick={() => setActiveTab('CONTENT')}>Content</Button>
                 </div>
             </div>
 
@@ -129,15 +169,22 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ user }) => {
                         <Button fullWidth variant="outline">Manage News</Button>
                     </div>
 
-                    {/* Game Content */}
-                    <div className="bg-slate-800 p-6 rounded-xl border border-slate-700 opacity-50">
+                    {/* Scenario Management */}
+                    <div className="bg-slate-800 p-6 rounded-xl border border-slate-700 cursor-pointer hover:border-amber-500 transition-colors" onClick={() => setActiveTab('SCENARIOS')}>
                         <h2 className="text-xl font-bold text-white mb-4 flex items-center gap-2">
-                            <Icons.Map className="w-5 h-5 text-amber-500" /> Content (Coming Soon)
+                            <Icons.Map className="w-5 h-5 text-amber-500" /> Scenarios
                         </h2>
-                        <p className="text-sm text-slate-400 mb-4">Edit parties, archetypes, and cities.</p>
-                        <div className="space-y-2">
-                            <Button fullWidth variant="outline" disabled>Manage Parties</Button>
-                        </div>
+                        <p className="text-sm text-slate-400 mb-4">Manage active game rooms.</p>
+                        <Button fullWidth variant="outline">Manage Scenarios</Button>
+                    </div>
+
+                    {/* Game Content */}
+                    <div className="bg-slate-800 p-6 rounded-xl border border-slate-700 cursor-pointer hover:border-amber-500 transition-colors" onClick={() => setActiveTab('CONTENT')}>
+                        <h2 className="text-xl font-bold text-white mb-4 flex items-center gap-2">
+                            <Icons.Map className="w-5 h-5 text-amber-500" /> Content Management
+                        </h2>
+                        <p className="text-sm text-slate-400 mb-4">Edit parties, archetypes, and game data.</p>
+                        <Button fullWidth variant="outline">Manage Content</Button>
                     </div>
                 </div>
             )}
@@ -194,6 +241,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ user }) => {
 
             {activeTab === 'NEWS' && (
                 <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                    {/* ... (keep news content) ... */}
                     {/* Create News Form */}
                     <div className="bg-slate-800 p-6 rounded-xl border border-slate-700 h-fit">
                         <h2 className="text-xl font-bold text-white mb-4">Publish News</h2>
@@ -253,8 +301,8 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ user }) => {
                                     <div>
                                         <div className="flex items-center gap-2 mb-1">
                                             <span className={`text-xs font-bold px-2 py-0.5 rounded ${item.category === 'SCANDAL' ? 'bg-red-900/50 text-red-400' :
-                                                    item.category === 'ECONOMY' ? 'bg-blue-900/50 text-blue-400' :
-                                                        'bg-slate-800 text-slate-400'
+                                                item.category === 'ECONOMY' ? 'bg-blue-900/50 text-blue-400' :
+                                                    'bg-slate-800 text-slate-400'
                                                 }`}>
                                                 {item.category}
                                             </span>
@@ -272,6 +320,104 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ user }) => {
                                     </button>
                                 </div>
                             ))}
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {activeTab === 'SCENARIOS' && (
+                <div className="bg-slate-800 rounded-xl border border-slate-700 overflow-hidden">
+                    <div className="p-6 border-b border-slate-700 flex justify-between items-center">
+                        <h2 className="text-xl font-bold text-white">Scenario Management</h2>
+                    </div>
+                    <div className="overflow-x-auto">
+                        <table className="w-full text-left text-sm text-slate-400">
+                            <thead className="bg-slate-900 text-slate-200 uppercase font-bold">
+                                <tr>
+                                    <th className="px-6 py-3">Room Name</th>
+                                    <th className="px-6 py-3">Host</th>
+                                    <th className="px-6 py-3">Status</th>
+                                    <th className="px-6 py-3">Players</th>
+                                    <th className="px-6 py-3">Action</th>
+                                </tr>
+                            </thead>
+                            <tbody className="divide-y divide-slate-700">
+                                {rooms.length === 0 ? (
+                                    <tr><td colSpan={5} className="px-6 py-8 text-center">No active scenarios found.</td></tr>
+                                ) : rooms.map(room => (
+                                    <tr key={room.id} className="hover:bg-slate-700/50">
+                                        <td className="px-6 py-4 font-medium text-white">
+                                            {room.name}
+                                            <div className="text-xs text-slate-500">{room.id}</div>
+                                        </td>
+                                        <td className="px-6 py-4">{room.host}</td>
+                                        <td className="px-6 py-4">
+                                            <span className={`px-2 py-1 rounded text-xs font-bold ${room.status === 'WAITING' ? 'bg-amber-900/50 text-amber-500' :
+                                                room.status === 'IN_PROGRESS' ? 'bg-green-900/50 text-green-500' :
+                                                    'bg-slate-700 text-slate-400'
+                                                }`}>
+                                                {room.status}
+                                            </span>
+                                        </td>
+                                        <td className="px-6 py-4">{room.players} / {room.maxPlayers}</td>
+                                        <td className="px-6 py-4">
+                                            <button
+                                                onClick={() => handleDeleteRoom(room.id)}
+                                                className="text-red-400 hover:text-red-300 transition-colors flex items-center gap-1"
+                                            >
+                                                <Icons.LogOut className="w-4 h-4" /> Delete
+                                            </button>
+                                        </td>
+                                    </tr>
+                                ))}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            )}
+            {activeTab === 'CONTENT' && (
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    {/* Parties Section */}
+                    <div className="bg-slate-800 rounded-xl border border-slate-700 overflow-hidden">
+                        <div className="p-6 border-b border-slate-700 flex justify-between items-center">
+                            <h2 className="text-xl font-bold text-white">Political Parties</h2>
+                            <Button size="sm" variant="outline" onClick={() => alert("Implementation pending for Add Party form")}>+ Add</Button>
+                        </div>
+                        <div className="p-4 space-y-2">
+                            {parties.map(p => (
+                                <div key={p.id} className="flex justify-between items-center bg-slate-900 p-3 rounded border border-slate-800">
+                                    <div className="flex items-center gap-2">
+                                        <div className="w-4 h-4 rounded-full" style={{ backgroundColor: p.color }}></div>
+                                        <span className="font-bold text-white">{p.acronym}</span>
+                                        <span className="text-sm text-slate-400">- {p.name}</span>
+                                    </div>
+                                    <button onClick={() => handleDeleteParty(p.id)} className="text-slate-500 hover:text-red-500"><Icons.LogOut className="w-4 h-4" /></button>
+                                </div>
+                            ))}
+                            {parties.length === 0 && <p className="text-slate-500 text-center italic">No parties found.</p>}
+                        </div>
+                    </div>
+
+                    {/* Archetypes Section */}
+                    <div className="bg-slate-800 rounded-xl border border-slate-700 overflow-hidden">
+                        <div className="p-6 border-b border-slate-700 flex justify-between items-center">
+                            <h2 className="text-xl font-bold text-white">Archetypes</h2>
+                            <Button size="sm" variant="outline" onClick={() => alert("Implementation pending for Add Archetype form")}>+ Add</Button>
+                        </div>
+                        <div className="p-4 space-y-2">
+                            {archetypes.map(a => (
+                                <div key={a.id} className="flex justify-between items-center bg-slate-900 p-3 rounded border border-slate-800">
+                                    <div className="flex items-center gap-2">
+                                        <span className="text-2xl">{a.icon}</span>
+                                        <div>
+                                            <div className="font-bold text-white">{a.name}</div>
+                                            <div className="text-xs text-slate-500">C:{a.baseStats.charisma} I:{a.baseStats.intelligence} R:{a.baseStats.resources}</div>
+                                        </div>
+                                    </div>
+                                    <button onClick={() => handleDeleteArchetype(a.id)} className="text-slate-500 hover:text-red-500"><Icons.LogOut className="w-4 h-4" /></button>
+                                </div>
+                            ))}
+                            {archetypes.length === 0 && <p className="text-slate-500 text-center italic">No archetypes found.</p>}
                         </div>
                     </div>
                 </div>

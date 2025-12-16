@@ -15,8 +15,10 @@ import {
     subscribeToRooms, deleteGameRoom,
     getParties, addParty, deleteParty,
     getArchetypes, addArchetype, deleteArchetype,
-    getCharacters, addCharacter, deleteCharacter
+    getCharacters, addCharacter, deleteCharacter,
+    seedDatabase
 } from '../services/firestoreService';
+import { DEFAULT_ARCHETYPES, DEFAULT_CHARACTERS } from '../constants/defaults';
 
 interface AdminDashboardProps {
     user: User;
@@ -494,6 +496,25 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ user }) => {
             )}
             {activeTab === 'CONTENT' && (
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    {/* Header with Seed Actions */}
+                    <div className="md:col-span-2 flex justify-between items-center bg-slate-800 p-4 rounded-xl border border-slate-700">
+                        <div>
+                            <h2 className="text-xl font-bold text-white">Content Management</h2>
+                            <p className="text-sm text-slate-400">Manage game data.</p>
+                        </div>
+                        <Button
+                            variant="secondary"
+                            onClick={async () => {
+                                if (window.confirm('This will overwrite/add default Archetypes and Characters. Continue?')) {
+                                    await seedDatabase(DEFAULT_ARCHETYPES, DEFAULT_CHARACTERS);
+                                    alert('Seeding complete!');
+                                }
+                            }}
+                        >
+                            <Icons.Refresh className="w-4 h-4 mr-2" /> Seed Defaults
+                        </Button>
+                    </div>
+
                     {/* Parties Section */}
                     <div className="space-y-6">
                         <div className="bg-slate-800 p-6 rounded-xl border border-slate-700">

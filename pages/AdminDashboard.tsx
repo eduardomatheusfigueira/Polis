@@ -1,16 +1,21 @@
 
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { User, UserRole, NewsItem, GameRoom, PoliticalParty, Archetype } from '../types';
+import { User, UserRole, NewsItem, GameRoom, PoliticalParty, Archetype, Character } from '../types';
 import Button from '../components/Button';
 import { Icons } from '../constants';
-import { ECONOMIC_STANCES, SOCIAL_STANCES, ARCHETYPE_BACKGROUNDS } from '../constants/traits';
+import {
+    ECONOMIC_STANCES, SOCIAL_STANCES, ARCHETYPE_BACKGROUNDS,
+    CHAR_TEMPERAMENTS, CHAR_SPECIALIZATIONS
+} from '../constants/traits';
+
 import {
     getAllUsers, updateUserRole,
     addNews, deleteNews, getLiveNews,
     subscribeToRooms, deleteGameRoom,
     getParties, addParty, deleteParty,
-    getArchetypes, addArchetype, deleteArchetype
+    getArchetypes, addArchetype, deleteArchetype,
+    getCharacters, addCharacter, deleteCharacter
 } from '../services/firestoreService';
 
 interface AdminDashboardProps {
@@ -19,12 +24,13 @@ interface AdminDashboardProps {
 
 const AdminDashboard: React.FC<AdminDashboardProps> = ({ user }) => {
     const navigate = useNavigate();
-    const [activeTab, setActiveTab] = useState<'OVERVIEW' | 'USERS' | 'NEWS' | 'SCENARIOS' | 'CONTENT'>('OVERVIEW');
+    const [activeTab, setActiveTab] = useState<'OVERVIEW' | 'USERS' | 'NEWS' | 'SCENARIOS' | 'CONTENT' | 'CHARACTERS'>('OVERVIEW');
     const [users, setUsers] = useState<User[]>([]);
     const [news, setNews] = useState<NewsItem[]>([]);
     const [rooms, setRooms] = useState<GameRoom[]>([]);
     const [parties, setParties] = useState<PoliticalParty[]>([]);
     const [archetypes, setArchetypes] = useState<Archetype[]>([]);
+    const [characters, setCharacters] = useState<Character[]>([]);
     const [isLoading, setIsLoading] = useState(false);
 
     // Form State
@@ -50,6 +56,13 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ user }) => {
         background: 'OUTSIDER'
     });
 
+    const [charForm, setCharForm] = useState<Partial<Character> & { archetypeId: string, temperament: string, specialization: string }>({
+        name: '',
+        archetypeId: '',
+        temperament: 'PRAGMATIC',
+        specialization: 'STRATEGIST'
+    });
+
     useEffect(() => {
         if (activeTab === 'USERS') {
             loadUsers();
@@ -67,6 +80,10 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ user }) => {
             const unsubParties = getParties(setParties);
             const unsubArchs = getArchetypes(setArchetypes);
             return () => { unsubParties(); unsubArchs(); };
+        } else if (activeTab === 'CHARACTERS') {
+            const unsubA = getArchetypes(setArchetypes); // Need these for the dropdown
+            const unsubC = getCharacters(setCharacters);
+            return () => { unsubA(); unsubC(); };
         }
     }, [activeTab]);
 
@@ -191,6 +208,37 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ user }) => {
         }
     };
 
+    const handleAddCharacter = async (e: React.FormEvent) => {
+        e.preventDefault();
+        if (!charForm.name || !charForm.archetypeId) return;
+
+        const temp = CHAR_TEMPERAMENTS[charForm.temperament as keyof typeof CHAR_TEMPERAMENTS];
+        const spec = CHAR_SPECIALIZATIONS[charForm.specialization as keyof typeof CHAR_SPECIALIZATIONS];
+
+        // Find parent archetype to get base stats?
+        // For now, character stats are dynamic or just modifiers.
+        // Let's copy base stats + add modifiers logic if we had it.
+        // Simplified: Character just links to Archetype.
+
+        const newChar: Character = {
+            id: 'char_' + Date.now(),
+            name: charForm.name!,
+            archetypeId: charForm.archetypeId!,
+            temperament: charForm.temperament as any,
+            specialization: charForm.specialization as any,
+            description: `${temp.label} ${spec.label}`,
+            // Base stats are on the archetype, modifiers could go here.
+        };
+
+        try {
+            await addCharacter(newChar);
+            setCharForm({ name: '', archetypeId: '', temperament: 'PRAGMATIC' as any, specialization: 'STRATEGIST' as any });
+            alert("Character added!");
+        } catch (err) {
+            console.error(err);
+        }
+    };
+
     if (user.role !== 'ADMIN') {
         return (
             <div className="flex flex-col items-center justify-center min-h-[50vh] text-center">
@@ -213,7 +261,8 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ user }) => {
                     <Button variant={activeTab === 'USERS' ? 'primary' : 'ghost'} onClick={() => setActiveTab('USERS')}>Users</Button>
                     <Button variant={activeTab === 'NEWS' ? 'primary' : 'ghost'} onClick={() => setActiveTab('NEWS')}>News</Button>
                     <Button variant={activeTab === 'SCENARIOS' ? 'primary' : 'ghost'} onClick={() => setActiveTab('SCENARIOS')}>Scenarios</Button>
-                    <Button variant={activeTab === 'CONTENT' ? 'primary' : 'ghost'} onClick={() => setActiveTab('CONTENT')}>Content</Button>
+                    <Button variant={activeTab === 'CONTENT' ? 'primary' : 'ghost'} onClick={() => setActiveTab('CONTENT')}>Manage Content</Button>
+                    <Button variant={activeTab === 'CHARACTERS' ? 'primary' : 'ghost'} onClick={() => setActiveTab('CHARACTERS')}>Characters</Button>
                 </div>
             </div>
 
@@ -571,6 +620,87 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ user }) => {
                                 ))}
                                 {archetypes.length === 0 && <p className="text-slate-500 text-center italic">No archetypes found.</p>}
                             </div>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {activeTab === 'CHARACTERS' && (
+                <div className="space-y-6">
+                    <div className="bg-slate-800 p-6 rounded-lg border border-slate-700">
+                        <h2 className="text-xl font-bold mb-4 text-emerald-400">Add New Character</h2>
+                        <form onSubmit={handleAddCharacter} className="space-y-3">
+                            <div className="grid grid-cols-2 gap-2">
+                                <input
+                                    className="bg-slate-900 border border-slate-600 rounded px-3 py-2 text-white w-full"
+                                    placeholder="Character Name"
+                                    value={charForm.name}
+                                    onChange={e => setCharForm({ ...charForm, name: e.target.value })}
+                                />
+                                <select
+                                    className="bg-slate-900 border border-slate-600 rounded px-3 py-2 text-white w-full text-sm"
+                                    value={charForm.archetypeId}
+                                    onChange={e => setCharForm({ ...charForm, archetypeId: e.target.value })}
+                                >
+                                    <option value="">Select Archetype (Class)...</option>
+                                    {archetypes.map(a => (
+                                        <option key={a.id} value={a.id}>{a.name} ({a.background})</option>
+                                    ))}
+                                </select>
+                            </div>
+
+                            <div className="grid grid-cols-2 gap-2">
+                                <div>
+                                    <label className="text-xs text-slate-400 block mb-1">Temperament</label>
+                                    <select className="bg-slate-900 border border-slate-600 rounded px-3 py-2 text-white w-full text-sm" value={charForm.temperament} onChange={e => setCharForm({ ...charForm, temperament: e.target.value })}>
+                                        {Object.entries(CHAR_TEMPERAMENTS).map(([key, val]) => (
+                                            <option key={key} value={key}>{val.label}</option>
+                                        ))}
+                                    </select>
+                                </div>
+                                <div>
+                                    <label className="text-xs text-slate-400 block mb-1">Specialization</label>
+                                    <select className="bg-slate-900 border border-slate-600 rounded px-3 py-2 text-white w-full text-sm" value={charForm.specialization} onChange={e => setCharForm({ ...charForm, specialization: e.target.value })}>
+                                        {Object.entries(CHAR_SPECIALIZATIONS).map(([key, val]) => (
+                                            <option key={key} value={key}>{val.label}</option>
+                                        ))}
+                                    </select>
+                                </div>
+                            </div>
+
+                            {/* Live Preview */}
+                            <div className="bg-slate-900/50 p-3 rounded text-xs text-slate-400 space-y-1">
+                                <p><strong className="text-blue-400">Temperament Effect:</strong> {CHAR_TEMPERAMENTS[charForm.temperament as keyof typeof CHAR_TEMPERAMENTS]?.bonus} / <span className="text-red-400">{CHAR_TEMPERAMENTS[charForm.temperament as keyof typeof CHAR_TEMPERAMENTS]?.malus}</span></p>
+                                <p><strong className="text-purple-400">Specialization Effect:</strong> {CHAR_SPECIALIZATIONS[charForm.specialization as keyof typeof CHAR_SPECIALIZATIONS]?.bonus}</p>
+                            </div>
+
+                            <Button type="submit" fullWidth>Create Character</Button>
+                        </form>
+                    </div>
+
+                    <div className="bg-slate-800 p-6 rounded-lg border border-slate-700">
+                        <h2 className="text-xl font-bold mb-4">Existing Characters</h2>
+                        <div className="space-y-2">
+                            {characters.map(char => {
+                                const parentArch = archetypes.find(a => a.id === char.archetypeId);
+                                return (
+                                    <div key={char.id} className="p-3 bg-slate-900 rounded border border-slate-700 flex justify-between items-center">
+                                        <div>
+                                            <div className="font-bold text-white">{char.name}</div>
+                                            <div className="text-xs text-slate-400">
+                                                {parentArch?.name} • {CHAR_TEMPERAMENTS[char.temperament]?.label} • {CHAR_SPECIALIZATIONS[char.specialization]?.label}
+                                            </div>
+                                        </div>
+                                        <button
+                                            onClick={() => deleteCharacter(char.id)}
+                                            className="text-red-500 hover:text-red-400 text-xs px-2 py-1 border border-red-500 rounded"
+                                        >
+                                            Delete
+                                        </button>
+                                    </div>
+                                );
+                            })}
+                            {characters.length === 0 && <p className="text-slate-500 text-sm">No characters created yet.</p>}
                         </div>
                     </div>
                 </div>

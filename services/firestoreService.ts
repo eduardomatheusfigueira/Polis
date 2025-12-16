@@ -206,3 +206,20 @@ export const getStoredParties = async (): Promise<PoliticalParty[]> => {
     const snapshot = await getDocs(collection(db, PARTIES_COLLECTION));
     return snapshot.docs.map(doc => doc.data() as PoliticalParty);
 };
+
+// --- CHARACTERS ---
+
+export const getCharacters = (callback: (chars: Character[]) => void) => {
+    return onSnapshot(collection(db, 'characters'), (snapshot) => {
+        const chars = snapshot.docs.map(doc => doc.data() as Character);
+        callback(chars);
+    });
+};
+
+export const addCharacter = async (character: Character) => {
+    await setDoc(doc(db, 'characters', character.id), character);
+};
+
+export const deleteCharacter = async (charId: string) => {
+    await deleteDoc(doc(db, 'characters', charId));
+};

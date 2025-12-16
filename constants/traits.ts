@@ -1,4 +1,5 @@
-import { EconomicStance, SocialStance, ArchetypeBackground } from '../types';
+
+import { EconomicStance, SocialStance, ArchetypeBackground, Temperament, Specialization } from '../types';
 
 interface TraitDefinition {
     label: string;
@@ -120,5 +121,59 @@ export const ARCHETYPE_BACKGROUNDS: Record<ArchetypeBackground, TraitDefinition>
         bonus: 'Viral Campaign: Online ads are 50% cheaper.',
         malus: 'Volatile support (Short attention span).',
         stats: { charisma: 8, intelligence: 4, resources: 6 }
+    }
+};
+
+export const CHAR_TEMPERAMENTS: Record<Temperament, TraitDefinition> = {
+    'PRAGMATIC': {
+        label: 'Pragmatic',
+        description: 'Focuses on results over ideology.',
+        bonus: '+10% Success Rate on Deals/Negotiations',
+        malus: '-5% Party Loyalty (Will flip for a better deal)'
+    },
+    'IDEALIST': {
+        label: 'Idealist',
+        description: 'Uncompromising principles.',
+        bonus: '+10% Party Loyalty & Base Morale',
+        malus: 'Harder to Compromise (Cannot accept bad deals)'
+    },
+    'RUTHLESS': {
+        label: 'Ruthless',
+        description: 'Victory at any cost.',
+        bonus: '+Attack Effectiveness (Smears are stronger)',
+        malus: '-Reputation (Hated by opposition)'
+    },
+    'CHARISMATIC': {
+        label: 'Charismatic',
+        description: 'Natural born leader.',
+        bonus: '+Rally Effectiveness (Crowds love you)',
+        malus: 'Higher Scandal Risk (Personal life scrutiny)'
+    }
+};
+
+export const CHAR_SPECIALIZATIONS: Record<Specialization, TraitDefinition> = {
+    'STRATEGIST': {
+        label: 'Strategist',
+        description: 'Master planner.',
+        bonus: 'Foresight: Can see 1 extra turn ahead in Events.',
+        malus: 'Analysis Paralysis: Slower action regeneration.'
+    },
+    'ORATOR': {
+        label: 'Orator',
+        description: 'Gifted speaker.',
+        bonus: 'Silver Tongue: Discounts on Campaign Actions.',
+        malus: 'Empty Words: Policies take longer to implement.'
+    },
+    'FUNDRAISER': {
+        label: 'Fundraiser',
+        description: 'Rainmaker.',
+        bonus: 'Deep Pockets: Generates passive income/turn.',
+        malus: 'Corporate Debt: Owes favors to donors.'
+    },
+    'OPERATOR': {
+        label: 'Operator',
+        description: 'Backroom dealer.',
+        bonus: 'Shadow Network: Cheaper \'Shadow\' actions.',
+        malus: 'Untrustworthy: Public actions are less effective.'
     }
 };

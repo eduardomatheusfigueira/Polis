@@ -1,8 +1,10 @@
+
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { User, UserRole, NewsItem, GameRoom, PoliticalParty, Archetype } from '../types';
 import Button from '../components/Button';
 import { Icons } from '../constants';
+import { ECONOMIC_STANCES, SOCIAL_STANCES, ARCHETYPE_BACKGROUNDS } from '../constants/traits';
 import {
     getAllUsers, updateUserRole,
     addNews, deleteNews, getLiveNews,
@@ -25,12 +27,27 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ user }) => {
     const [archetypes, setArchetypes] = useState<Archetype[]>([]);
     const [isLoading, setIsLoading] = useState(false);
 
-    // Form State for News
+    // Form State
     const [newsForm, setNewsForm] = useState<Partial<NewsItem>>({
         headline: '',
         preview: '',
         category: 'POLITICS',
         date: new Date().toISOString().split('T')[0]
+    });
+
+    const [partyForm, setPartyForm] = useState<Partial<PoliticalParty> & { economicStance: string, socialStance: string }>({
+        name: '',
+        acronym: '',
+        economicStance: 'CENTR_ECON',
+        socialStance: 'MODERATE',
+        color: '#334155'
+    });
+
+    const [archetypeForm, setArchetypeForm] = useState<Partial<Archetype> & { background: string }>({
+        name: '',
+        description: '',
+        icon: '👤',
+        background: 'OUTSIDER'
     });
 
     useEffect(() => {
@@ -121,6 +138,57 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ user }) => {
     const handleDeleteArchetype = async (id: string) => {
         if (!window.confirm("Delete archetype?")) return;
         await deleteArchetype(id);
+    };
+
+    const handleAddParty = async (e: React.FormEvent) => {
+        e.preventDefault();
+        if (!partyForm.name || !partyForm.acronym) return;
+
+        const eco = ECONOMIC_STANCES[partyForm.economicStance as keyof typeof ECONOMIC_STANCES];
+        const soc = SOCIAL_STANCES[partyForm.socialStance as keyof typeof SOCIAL_STANCES];
+
+        const newParty: PoliticalParty = {
+            id: 'party_' + Date.now(),
+            name: partyForm.name!,
+            acronym: partyForm.acronym!,
+            economicStance: partyForm.economicStance as any,
+            socialStance: partyForm.socialStance as any,
+            color: partyForm.color!,
+            bonuses: [eco.bonus, soc.bonus],
+            maluses: [eco.malus, soc.malus]
+        };
+
+        try {
+            await addParty(newParty);
+            setPartyForm({ name: '', acronym: '', economicStance: 'CENTR_ECON', socialStance: 'MODERATE', color: '#334155' });
+            alert("Party added!");
+        } catch (err) {
+            console.error(err);
+        }
+    };
+
+    const handleAddArchetype = async (e: React.FormEvent) => {
+        e.preventDefault();
+        if (!archetypeForm.name) return;
+
+        const bg = ARCHETYPE_BACKGROUNDS[archetypeForm.background as keyof typeof ARCHETYPE_BACKGROUNDS];
+
+        const newArchetype: Archetype = {
+            id: 'arch_' + Date.now(),
+            name: archetypeForm.name!,
+            description: archetypeForm.description || bg.description,
+            icon: archetypeForm.icon!,
+            background: archetypeForm.background as any,
+            baseStats: bg.stats || { charisma: 5, intelligence: 5, resources: 5 } // Fallback
+        };
+
+        try {
+            await addArchetype(newArchetype);
+            setArchetypeForm({ name: '', description: '', icon: '👤', background: 'OUTSIDER' });
+            alert("Archetype added!");
+        } catch (err) {
+            console.error(err);
+        }
     };
 
     if (user.role !== 'ADMIN') {
@@ -378,46 +446,131 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ user }) => {
             {activeTab === 'CONTENT' && (
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                     {/* Parties Section */}
-                    <div className="bg-slate-800 rounded-xl border border-slate-700 overflow-hidden">
-                        <div className="p-6 border-b border-slate-700 flex justify-between items-center">
-                            <h2 className="text-xl font-bold text-white">Political Parties</h2>
-                            <Button size="sm" variant="outline" onClick={() => alert("Implementation pending for Add Party form")}>+ Add</Button>
-                        </div>
-                        <div className="p-4 space-y-2">
-                            {parties.map(p => (
-                                <div key={p.id} className="flex justify-between items-center bg-slate-900 p-3 rounded border border-slate-800">
-                                    <div className="flex items-center gap-2">
-                                        <div className="w-4 h-4 rounded-full" style={{ backgroundColor: p.color }}></div>
-                                        <span className="font-bold text-white">{p.acronym}</span>
-                                        <span className="text-sm text-slate-400">- {p.name}</span>
-                                    </div>
-                                    <button onClick={() => handleDeleteParty(p.id)} className="text-slate-500 hover:text-red-500"><Icons.LogOut className="w-4 h-4" /></button>
+                    <div className="space-y-6">
+                        <div className="bg-slate-800 p-6 rounded-xl border border-slate-700">
+                            <h2 className="text-xl font-bold text-white mb-4">Add Party</h2>
+                            <form onSubmit={handleAddParty} className="space-y-3">
+                                <div className="grid grid-cols-2 gap-2">
+                                    <input className="bg-slate-900 border border-slate-600 rounded px-3 py-2 text-white w-full" placeholder="Name" value={partyForm.name} onChange={e => setPartyForm({ ...partyForm, name: e.target.value })} />
+                                    <input className="bg-slate-900 border border-slate-600 rounded px-3 py-2 text-white w-full" placeholder="Acronym" value={partyForm.acronym} onChange={e => setPartyForm({ ...partyForm, acronym: e.target.value })} />
                                 </div>
-                            ))}
-                            {parties.length === 0 && <p className="text-slate-500 text-center italic">No parties found.</p>}
+                                <div className="grid grid-cols-2 gap-2">
+                                    <div>
+                                        <label className="text-xs text-slate-400 block mb-1">Economic Stance</label>
+                                        <select className="bg-slate-900 border border-slate-600 rounded px-3 py-2 text-white w-full text-sm" value={partyForm.economicStance} onChange={e => setPartyForm({ ...partyForm, economicStance: e.target.value })}>
+                                            {Object.entries(ECONOMIC_STANCES).map(([key, val]) => (
+                                                <option key={key} value={key}>{val.label}</option>
+                                            ))}
+                                        </select>
+                                    </div>
+                                    <div>
+                                        <label className="text-xs text-slate-400 block mb-1">Social Stance</label>
+                                        <select className="bg-slate-900 border border-slate-600 rounded px-3 py-2 text-white w-full text-sm" value={partyForm.socialStance} onChange={e => setPartyForm({ ...partyForm, socialStance: e.target.value })}>
+                                            {Object.entries(SOCIAL_STANCES).map(([key, val]) => (
+                                                <option key={key} value={key}>{val.label}</option>
+                                            ))}
+                                        </select>
+                                    </div>
+                                </div>
+                                <input type="color" className="bg-slate-900 border border-slate-600 rounded h-10 w-full cursor-pointer" value={partyForm.color} onChange={e => setPartyForm({ ...partyForm, color: e.target.value })} />
+
+                                {/* Live Preview of Effects */}
+                                <div className="bg-slate-900/50 p-3 rounded text-xs text-slate-400 space-y-1">
+                                    <p><strong className="text-green-500">Eco Bonus:</strong> {ECONOMIC_STANCES[partyForm.economicStance as keyof typeof ECONOMIC_STANCES]?.bonus}</p>
+                                    <p><strong className="text-red-500">Eco Malus:</strong> {ECONOMIC_STANCES[partyForm.economicStance as keyof typeof ECONOMIC_STANCES]?.malus}</p>
+                                    <div className="h-px bg-slate-700 my-1"></div>
+                                    <p><strong className="text-green-500">Soc Bonus:</strong> {SOCIAL_STANCES[partyForm.socialStance as keyof typeof SOCIAL_STANCES]?.bonus}</p>
+                                    <p><strong className="text-red-500">Soc Malus:</strong> {SOCIAL_STANCES[partyForm.socialStance as keyof typeof SOCIAL_STANCES]?.malus}</p>
+                                </div>
+
+                                <Button type="submit" fullWidth>Create Party</Button>
+                            </form>
+                        </div>
+
+                        <div className="bg-slate-800 rounded-xl border border-slate-700 overflow-hidden">
+                            <div className="p-6 border-b border-slate-700">
+                                <h2 className="text-xl font-bold text-white">Political Parties</h2>
+                            </div>
+                            <div className="p-4 space-y-2 max-h-96 overflow-y-auto">
+                                {parties.map(p => (
+                                    <div key={p.id} className="flex justify-between items-center bg-slate-900 p-3 rounded border border-slate-800">
+                                        <div className="flex items-center gap-2">
+                                            <div className="w-4 h-4 rounded-full" style={{ backgroundColor: p.color }}></div>
+                                            <span className="font-bold text-white">{p.acronym}</span>
+                                            <span className="text-sm text-slate-400">- {p.name}</span>
+                                        </div>
+                                        <button onClick={() => handleDeleteParty(p.id)} className="text-slate-500 hover:text-red-500"><Icons.LogOut className="w-4 h-4" /></button>
+                                    </div>
+                                ))}
+                                {parties.length === 0 && <p className="text-slate-500 text-center italic">No parties found.</p>}
+                            </div>
                         </div>
                     </div>
 
                     {/* Archetypes Section */}
-                    <div className="bg-slate-800 rounded-xl border border-slate-700 overflow-hidden">
-                        <div className="p-6 border-b border-slate-700 flex justify-between items-center">
-                            <h2 className="text-xl font-bold text-white">Archetypes</h2>
-                            <Button size="sm" variant="outline" onClick={() => alert("Implementation pending for Add Archetype form")}>+ Add</Button>
-                        </div>
-                        <div className="p-4 space-y-2">
-                            {archetypes.map(a => (
-                                <div key={a.id} className="flex justify-between items-center bg-slate-900 p-3 rounded border border-slate-800">
-                                    <div className="flex items-center gap-2">
-                                        <span className="text-2xl">{a.icon}</span>
-                                        <div>
-                                            <div className="font-bold text-white">{a.name}</div>
-                                            <div className="text-xs text-slate-500">C:{a.baseStats.charisma} I:{a.baseStats.intelligence} R:{a.baseStats.resources}</div>
-                                        </div>
-                                    </div>
-                                    <button onClick={() => handleDeleteArchetype(a.id)} className="text-slate-500 hover:text-red-500"><Icons.LogOut className="w-4 h-4" /></button>
+                    <div className="space-y-6">
+                        <div className="bg-slate-800 p-6 rounded-xl border border-slate-700">
+                            <h2 className="text-xl font-bold text-white mb-4">Add Archetype</h2>
+                            <form onSubmit={handleAddArchetype} className="space-y-3">
+                                <div className="grid grid-cols-4 gap-2">
+                                    <input className="col-span-3 bg-slate-900 border border-slate-600 rounded px-3 py-2 text-white w-full" placeholder="Name" value={archetypeForm.name} onChange={e => setArchetypeForm({ ...archetypeForm, name: e.target.value })} />
+                                    <input className="col-span-1 bg-slate-900 border border-slate-600 rounded px-3 py-2 text-white w-full text-center" placeholder="Icon" value={archetypeForm.icon} onChange={e => setArchetypeForm({ ...archetypeForm, icon: e.target.value })} />
                                 </div>
-                            ))}
-                            {archetypes.length === 0 && <p className="text-slate-500 text-center italic">No archetypes found.</p>}
+
+                                <div>
+                                    <label className="text-xs text-slate-400 block mb-1">Background</label>
+                                    <select className="bg-slate-900 border border-slate-600 rounded px-3 py-2 text-white w-full text-sm" value={archetypeForm.background} onChange={e => setArchetypeForm({ ...archetypeForm, background: e.target.value })}>
+                                        {Object.entries(ARCHETYPE_BACKGROUNDS).map(([key, val]) => (
+                                            <option key={key} value={key}>{val.label}</option>
+                                        ))}
+                                    </select>
+                                </div>
+
+                                <textarea className="bg-slate-900 border border-slate-600 rounded px-3 py-2 text-white w-full text-sm" placeholder="Description (Optional override)" rows={2} value={archetypeForm.description} onChange={e => setArchetypeForm({ ...archetypeForm, description: e.target.value })} />
+
+                                {/* Stats Preview */}
+                                <div className="grid grid-cols-3 gap-2 text-center text-xs text-slate-400 bg-slate-900/50 p-2 rounded">
+                                    <div>
+                                        <div className="text-amber-500 font-bold">{ARCHETYPE_BACKGROUNDS[archetypeForm.background as keyof typeof ARCHETYPE_BACKGROUNDS]?.stats?.charisma}</div>
+                                        <div className="uppercase">Charisma</div>
+                                    </div>
+                                    <div>
+                                        <div className="text-blue-500 font-bold">{ARCHETYPE_BACKGROUNDS[archetypeForm.background as keyof typeof ARCHETYPE_BACKGROUNDS]?.stats?.intelligence}</div>
+                                        <div className="uppercase">Intel</div>
+                                    </div>
+                                    <div>
+                                        <div className="text-green-500 font-bold">{ARCHETYPE_BACKGROUNDS[archetypeForm.background as keyof typeof ARCHETYPE_BACKGROUNDS]?.stats?.resources}</div>
+                                        <div className="uppercase">Resources</div>
+                                    </div>
+                                </div>
+
+                                <div className="text-xs text-slate-400 italic">
+                                    <span className="text-amber-500 font-bold">Trait:</span> {ARCHETYPE_BACKGROUNDS[archetypeForm.background as keyof typeof ARCHETYPE_BACKGROUNDS]?.bonus}
+                                </div>
+
+                                <Button type="submit" fullWidth>Create Archetype</Button>
+                            </form>
+                        </div>
+
+                        <div className="bg-slate-800 rounded-xl border border-slate-700 overflow-hidden">
+                            <div className="p-6 border-b border-slate-700">
+                                <h2 className="text-xl font-bold text-white">Archetypes</h2>
+                            </div>
+                            <div className="p-4 space-y-2 max-h-96 overflow-y-auto">
+                                {archetypes.map(a => (
+                                    <div key={a.id} className="flex justify-between items-center bg-slate-900 p-3 rounded border border-slate-800">
+                                        <div className="flex items-center gap-2">
+                                            <span className="text-2xl">{a.icon}</span>
+                                            <div>
+                                                <div className="font-bold text-white">{a.name}</div>
+                                                <div className="text-xs text-slate-500">C:{a.baseStats.charisma} I:{a.baseStats.intelligence} R:{a.baseStats.resources}</div>
+                                            </div>
+                                        </div>
+                                        <button onClick={() => handleDeleteArchetype(a.id)} className="text-slate-500 hover:text-red-500"><Icons.LogOut className="w-4 h-4" /></button>
+                                    </div>
+                                ))}
+                                {archetypes.length === 0 && <p className="text-slate-500 text-center italic">No archetypes found.</p>}
+                            </div>
                         </div>
                     </div>
                 </div>

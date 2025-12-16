@@ -1,5 +1,11 @@
 export type UserRole = 'PLAYER' | 'MANAGER' | 'ADMIN';
 
+// --- STANCE & TRAIT ENUMS ---
+export type EconomicStance = 'NEOLIBERAL' | 'DEVELOPMENTALIST' | 'SOCIAL_DEMOCRAT' | 'LIBERTARIAN' | 'CENTR_ECON';
+export type SocialStance = 'CONSERVATIVE' | 'PROGRESSIVE' | 'MODERATE' | 'RADICAL' | 'TRADITIONALIST';
+export type ArchetypeBackground = 'UNION_LEADER' | 'TYCOON' | 'INTELLECTUAL' | 'OUTSIDER' | 'MILITARY' | 'INFLUENCER';
+
+
 export interface User {
   id: string;
   username: string;
@@ -81,6 +87,7 @@ export interface Archetype {
     intelligence: number;
     resources: number;
   };
+  background: ArchetypeBackground;
 }
 
 export interface Character {
@@ -100,7 +107,9 @@ export interface PoliticalParty {
   id: string;
   name: string;
   acronym: string;
-  spectrum: 'Left' | 'Center-Left' | 'Center' | 'Center-Right' | 'Right';
+  economicStance: EconomicStance;
+  socialStance: SocialStance;
+  // spectrum: 'Left' | 'Center-Left' | ... (Removed in favor of distinct stances)
   color: string;
   bonuses: string[];
   maluses: string[];

@@ -223,3 +223,21 @@ export const addCharacter = async (character: Character) => {
 export const deleteCharacter = async (charId: string) => {
     await deleteDoc(doc(db, 'characters', charId));
 };
+
+export const seedDatabase = async (archetypes: Archetype[], characters: Character[]) => {
+    const batch = writeBatch(db);
+
+    // Seed Archetypes
+    archetypes.forEach(arch => {
+        const docRef = doc(db, ARCHETYPES_COLLECTION, arch.id);
+        batch.set(docRef, arch);
+    });
+
+    // Seed Characters
+    characters.forEach(char => {
+        const docRef = doc(db, 'characters', char.id);
+        batch.set(docRef, char);
+    });
+
+    await batch.commit();
+};

@@ -5,6 +5,20 @@ export type EconomicStance = 'NEOLIBERAL' | 'DEVELOPMENTALIST' | 'SOCIAL_DEMOCRA
 export type SocialStance = 'CONSERVATIVE' | 'PROGRESSIVE' | 'MODERATE' | 'RADICAL' | 'TRADITIONALIST';
 export type ArchetypeBackground = 'UNION_LEADER' | 'TYCOON' | 'INTELLECTUAL' | 'OUTSIDER' | 'MILITARY' | 'INFLUENCER';
 
+export enum Temperament {
+  PRAGMATIC = 'PRAGMATIC',
+  IDEALIST = 'IDEALIST',
+  RUTHLESS = 'RUTHLESS',
+  CHARISMATIC = 'CHARISMATIC'
+}
+
+export enum Specialization {
+  STRATEGIST = 'STRATEGIST',
+  ORATOR = 'ORATOR',
+  FUNDRAISER = 'FUNDRAISER',
+  OPERATOR = 'OPERATOR'
+}
+
 
 export interface User {
   id: string;
@@ -93,7 +107,10 @@ export interface Archetype {
 export interface Character {
   id: string;
   name: string;
-  archetypeId: string;
+  archetypeId: string; // Links to the parent Archetype (Class)
+  temperament: Temperament;
+  specialization: Specialization;
+  description: string;
   imageUrl?: string;
   stats: {
     charisma: number;

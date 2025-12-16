@@ -41,4 +41,7 @@ export const Icons = {
   Cloud: ({ className }: { className?: string }) => (
     <svg xmlns="http://www.w3.org/2000/svg" className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M17.5 19c0-3.037-2.463-5.5-5.5-5.5S6.5 15.963 6.5 19" /><path d="M19 19H5a2 2 0 0 1-2-2V9a2 2 0 0 1 2-2h2a4 4 0 0 1 8 0h2a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2z" /></svg>
   ),
+  Refresh: ({ className }: { className?: string }) => (
+    <svg xmlns="http://www.w3.org/2000/svg" className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 12a9 9 0 0 0-9-9 9.75 9.75 0 0 0-6.74 2.74L3 8" /><path d="M3 3v5h5" /><path d="M3 12a9 9 0 0 0 9 9 9.75 9.75 0 0 0 6.74-2.74L21 16" /><path d="M16 21h5v-5" /></svg>
+  ),
 };

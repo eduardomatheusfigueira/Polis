@@ -38,16 +38,16 @@ const Profile: React.FC<ProfileProps> = ({ user, onUpdateUser }) => {
 
   return (
     <div className="max-w-4xl mx-auto space-y-8">
-      
+
       {/* Header / Main Info */}
       <div className="bg-slate-900 border border-slate-800 rounded-xl p-8 relative overflow-hidden">
         <div className="absolute top-0 left-0 w-full h-32 bg-gradient-to-b from-amber-900/20 to-transparent"></div>
-        
+
         <div className="relative flex flex-col md:flex-row items-start gap-6">
           <div className="relative group">
-            <img 
-              src={user.avatarUrl || `https://ui-avatars.com/api/?name=${user.username}&background=random`} 
-              alt="Profile" 
+            <img
+              src={user.avatarUrl || `https://ui-avatars.com/api/?name=${user.username}&background=random`}
+              alt="Profile"
               className="w-32 h-32 rounded-full border-4 border-slate-900 shadow-xl object-cover"
             />
             {isEditing && (
@@ -75,30 +75,30 @@ const Profile: React.FC<ProfileProps> = ({ user, onUpdateUser }) => {
 
             {isEditing ? (
               <div className="mt-6 space-y-4 bg-slate-800/50 p-4 rounded-lg">
-                <Input 
-                  label="Full Name" 
-                  value={formData.fullName} 
-                  onChange={e => setFormData({...formData, fullName: e.target.value})} 
+                <Input
+                  label="Full Name"
+                  value={formData.fullName}
+                  onChange={e => setFormData({ ...formData, fullName: e.target.value })}
                 />
                 <div className="space-y-1">
                   <label className="block text-sm font-medium text-slate-300">Bio / Manifesto</label>
-                  <textarea 
+                  <textarea
                     className="w-full px-3 py-2 bg-slate-800 border border-slate-700 rounded-md text-white focus:ring-2 focus:ring-amber-500 focus:outline-none"
                     rows={3}
                     value={formData.bio}
-                    onChange={e => setFormData({...formData, bio: e.target.value})}
+                    onChange={e => setFormData({ ...formData, bio: e.target.value })}
                   />
                 </div>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <Input 
-                    label="Public Email" 
-                    value={formData.contactEmail} 
-                    onChange={e => setFormData({...formData, contactEmail: e.target.value})} 
+                  <Input
+                    label="Public Email"
+                    value={formData.contactEmail}
+                    onChange={e => setFormData({ ...formData, contactEmail: e.target.value })}
                   />
-                  <Input 
-                    label="Website/Social" 
-                    value={formData.website} 
-                    onChange={e => setFormData({...formData, website: e.target.value})} 
+                  <Input
+                    label="Website/Social"
+                    value={formData.website}
+                    onChange={e => setFormData({ ...formData, website: e.target.value })}
                   />
                 </div>
                 <div className="flex justify-end gap-2 pt-2">
@@ -111,7 +111,7 @@ const Profile: React.FC<ProfileProps> = ({ user, onUpdateUser }) => {
                 <p className="text-slate-300 leading-relaxed italic border-l-2 border-amber-500 pl-4">
                   "{user.bio || "No political manifesto yet."}"
                 </p>
-                
+
                 {(user.contactEmail || user.website) && (
                   <div className="mt-4 flex flex-wrap gap-4 text-sm">
                     {user.contactEmail && (
@@ -119,7 +119,7 @@ const Profile: React.FC<ProfileProps> = ({ user, onUpdateUser }) => {
                         <Icons.Mail className="w-4 h-4" /> {user.contactEmail}
                       </span>
                     )}
-                     {user.website && (
+                    {user.website && (
                       <span className="flex items-center gap-1 text-slate-400">
                         <Icons.Map className="w-4 h-4" /> {user.website}
                       </span>
@@ -135,43 +135,67 @@ const Profile: React.FC<ProfileProps> = ({ user, onUpdateUser }) => {
       {/* Stats & Achievements */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         <div className="bg-slate-900 border border-slate-800 rounded-xl p-6">
-           <h2 className="text-xl font-serif font-bold text-white mb-4 flex items-center gap-2">
-             <Icons.TrendingUp className="w-5 h-5 text-amber-500" /> Career History
-           </h2>
-           <div className="space-y-4">
-              <div className="flex justify-between items-center text-sm">
-                <span className="text-slate-400">Campaigns Won</span>
-                <span className="text-white font-mono">12</span>
-              </div>
-              <div className="flex justify-between items-center text-sm">
-                <span className="text-slate-400">Debates Succeeded</span>
-                <span className="text-white font-mono">45</span>
-              </div>
-              <div className="flex justify-between items-center text-sm">
-                <span className="text-slate-400">Public Approval</span>
-                <div className="w-24 bg-slate-800 rounded-full h-2">
-                  <div className="bg-green-500 h-2 rounded-full" style={{ width: '72%' }}></div>
+          <h2 className="text-xl font-serif font-bold text-white mb-4 flex items-center gap-2">
+            <Icons.TrendingUp className="w-5 h-5 text-amber-500" /> Career History
+          </h2>
+
+          {/* Summary Stats */}
+          <div className="grid grid-cols-2 gap-4 mb-6">
+            <div className="bg-slate-950 p-3 rounded text-center">
+              <div className="text-2xl font-mono text-white font-bold">{user.careerHistory?.filter(h => h.result === 'VICTORY').length || 0}</div>
+              <div className="text-xs text-slate-500 uppercase">Victories</div>
+            </div>
+            <div className="bg-slate-950 p-3 rounded text-center">
+              <div className="text-2xl font-mono text-white font-bold">{user.careerHistory?.length || 0}</div>
+              <div className="text-xs text-slate-500 uppercase">Campaigns</div>
+            </div>
+          </div>
+
+          {/* History List */}
+          <div className="space-y-3 max-h-[300px] overflow-y-auto pr-2">
+            {(!user.careerHistory || user.careerHistory.length === 0) ? (
+              <p className="text-slate-500 text-sm italic">No campaigns finished yet.</p>
+            ) : (
+              user.careerHistory.map(entry => (
+                <div key={entry.id} className="flex justify-between items-center p-3 bg-slate-800/50 rounded border border-slate-700/50">
+                  <div>
+                    <div className={`font-bold text-sm ${entry.result === 'VICTORY' ? 'text-green-400' : 'text-red-400'}`}>
+                      {entry.result}
+                    </div>
+                    <div className="text-xs text-slate-400">{entry.scenarioName} • {entry.role}</div>
+                  </div>
+                  <div className="text-right">
+                    <div className="text-xs text-slate-500">{entry.date}</div>
+                    {entry.score !== undefined && <div className="text-xs font-mono text-amber-500">Score: {entry.score}</div>}
+                  </div>
                 </div>
-              </div>
-           </div>
+              ))
+            )}
+          </div>
         </div>
 
         <div className="bg-slate-900 border border-slate-800 rounded-xl p-6">
-           <h2 className="text-xl font-serif font-bold text-white mb-4 flex items-center gap-2">
-             <Icons.Award className="w-5 h-5 text-amber-500" /> Achievements
-           </h2>
-           <div className="space-y-3">
-             {achievements.map(ach => (
-               <div key={ach.id} className={`flex gap-3 p-3 rounded-lg border ${ach.unlockedAt ? 'bg-slate-800/50 border-slate-700' : 'bg-slate-900/50 border-slate-800 opacity-50'}`}>
-                 <div className="text-2xl">{ach.icon}</div>
-                 <div>
-                   <h3 className="text-sm font-bold text-slate-200">{ach.title}</h3>
-                   <p className="text-xs text-slate-500">{ach.description}</p>
-                   {ach.unlockedAt && <p className="text-[10px] text-amber-500 mt-1">Unlocked: {ach.unlockedAt}</p>}
-                 </div>
-               </div>
-             ))}
-           </div>
+          <h2 className="text-xl font-serif font-bold text-white mb-4 flex items-center gap-2">
+            <Icons.Award className="w-5 h-5 text-amber-500" /> Achievements
+          </h2>
+          <div className="space-y-3 max-h-[400px] overflow-y-auto pr-2">
+            {achievements.map(ach => {
+              // Check if user has this achievement unlocked
+              const userAch = user.achievements?.find(ua => ua.id === ach.id);
+              const isUnlocked = !!userAch;
+
+              return (
+                <div key={ach.id} className={`flex gap-3 p-3 rounded-lg border ${isUnlocked ? 'bg-slate-800/50 border-amber-900/50' : 'bg-slate-900/50 border-slate-800 opacity-40 grayscale'}`}>
+                  <div className="text-2xl">{ach.icon}</div>
+                  <div>
+                    <h3 className={`text-sm font-bold ${isUnlocked ? 'text-amber-100' : 'text-slate-400'}`}>{ach.title}</h3>
+                    <p className="text-xs text-slate-500">{ach.description}</p>
+                    {isUnlocked && <p className="text-[10px] text-amber-500 mt-1 font-bold">Unlocked: {userAch?.unlockedAt}</p>}
+                  </div>
+                </div>
+              );
+            })}
+          </div>
         </div>
       </div>
 

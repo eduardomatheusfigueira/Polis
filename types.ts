@@ -20,6 +20,16 @@ export enum Specialization {
 }
 
 
+export interface CareerHistoryEntry {
+  id: string;
+  date: string;
+  scenarioName: string;
+  role: PlayerRole;
+  result: 'VICTORY' | 'DEFEAT';
+  score?: number;
+  details?: string;
+}
+
 export interface User {
   id: string;
   username: string;
@@ -33,6 +43,7 @@ export interface User {
   contactEmail?: string;
   website?: string;
   achievements: Achievement[];
+  careerHistory?: CareerHistoryEntry[];
   deck?: Character[]; // Characters the user has collected
 }
 

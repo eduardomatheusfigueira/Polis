@@ -241,3 +241,36 @@ export const seedDatabase = async (archetypes: Archetype[], characters: Characte
 
     await batch.commit();
 };
+
+export const addHistoryEntry = async (userId: string, entry: any) => {
+    const userRef = doc(db, USERS_COLLECTION, userId);
+    const userSnap = await getDoc(userRef);
+
+    if (userSnap.exists()) {
+        const userData = userSnap.data() as User;
+        const currentHistory = userData.careerHistory || [];
+        // Add to history
+        await updateDoc(userRef, {
+            careerHistory: [entry, ...currentHistory]
+        });
+    }
+};
+
+export const unlockAchievement = async (userId: string, achievement: any) => {
+    const userRef = doc(db, USERS_COLLECTION, userId);
+    const userSnap = await getDoc(userRef);
+
+    if (userSnap.exists()) {
+        const userData = userSnap.data() as User;
+        const currentAchievements = userData.achievements || [];
+
+        // Check if already unlocked
+        if (!currentAchievements.some(a => a.id === achievement.id)) {
+            await updateDoc(userRef, {
+                achievements: [...currentAchievements, { ...achievement, unlockedAt: new Date().toISOString().split('T')[0] }]
+            });
+            return true; // Unlocked successfully
+        }
+    }
+    return false; // Already unlocked or user not found
+};

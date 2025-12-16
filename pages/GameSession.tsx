@@ -2,9 +2,13 @@ import React, { useState, useEffect } from 'react';
 import { useLocation, useNavigate, Navigate } from 'react-router-dom';
 import { GameSessionState, GameAction, Issue, Proposal, Character, PoliticalParty, DemographicGroup } from '../types';
 import { initializeGame, processTurn, getAvailableActions, getIssues, getProposals, updatePlatform, startNextSeason } from '../services/gameService';
-import { saveGameSession, getGameSession } from '../services/firestoreService';
+import { saveGameSession, getGameSession, addHistoryEntry } from '../services/firestoreService';
+import { checkAchievements } from '../services/achievementService';
 import Button from '../components/Button';
 import { Icons } from '../constants';
+import { auth } from '../services/firebase';
+import { User } from '../types';
+import { getUserById } from '../services/firestoreService';
 
 const GameSession: React.FC = () => {
   const location = useLocation();
@@ -49,6 +53,30 @@ const GameSession: React.FC = () => {
     setGameState(newState);
     try {
       await saveGameSession(newState);
+
+      // Check for Game Over to record history
+      if (newState.gameOver && auth.currentUser) {
+        // We need to fetch current user to pass to checkAchievements, 
+        // BUT checkAchievements needs the full user object (with existing achievements)
+        // So let's do a quick fetch
+        const user = await getUserById(auth.currentUser.uid);
+        if (user) {
+          // 1. Record History
+          await addHistoryEntry(user.id, {
+            id: `hist_${Date.now()}`,
+            date: new Date().toISOString().split('T')[0],
+            scenarioName: newState.location.city, // Using city as scenario name proxy
+            role: newState.playerState.role,
+            result: newState.winner ? 'VICTORY' : 'DEFEAT',
+            score: newState.playerState.stats.popularity, // Simple score
+            details: newState.winner ? 'Achieved political objective.' : 'Failed to maintain power.'
+          });
+
+          // 2. Check Achievements
+          await checkAchievements(user, newState);
+        }
+      }
+
     } catch (error) {
       console.error("Failed to save game state:", error);
     }
@@ -203,8 +231,8 @@ const GameSession: React.FC = () => {
           <div className="space-y-2 max-h-[300px] overflow-y-auto text-sm">
             {gameState.turnHistory.map((event, i) => (
               <div key={i} className={`pb-2 border-b border-slate-800 last:border-0 ${event.type === 'CRITICAL' ? 'text-red-400 font-bold' :
-                  event.type === 'SUCCESS' ? 'text-green-400' :
-                    event.type === 'FAILURE' ? 'text-slate-500' : 'text-slate-300'
+                event.type === 'SUCCESS' ? 'text-green-400' :
+                  event.type === 'FAILURE' ? 'text-slate-500' : 'text-slate-300'
                 }`}>
                 <span className="text-xs opacity-50 mr-2">[T{event.turn}]</span>
                 {event.message}
@@ -224,8 +252,8 @@ const GameSession: React.FC = () => {
               key={tab}
               onClick={() => setActiveTab(tab)}
               className={`px-4 py-2 rounded-md text-sm font-medium transition-all ${activeTab === tab
-                  ? 'bg-slate-700 text-white shadow'
-                  : 'text-slate-400 hover:text-white'
+                ? 'bg-slate-700 text-white shadow'
+                : 'text-slate-400 hover:text-white'
                 }`}
             >
               {tab.charAt(0) + tab.slice(1).toLowerCase()}
@@ -246,16 +274,16 @@ const GameSession: React.FC = () => {
                 }
                 onClick={() => handleAction(action)}
                 className={`bg-slate-900 border border-slate-800 p-5 rounded-xl text-left hover:border-amber-600 hover:shadow-lg transition-all disabled:opacity-50 disabled:cursor-not-allowed group relative overflow-hidden ${action.type === 'GOVERNANCE' ? 'ring-1 ring-amber-500/30' :
-                    action.type === 'INSTITUTION' ? 'ring-1 ring-red-500/30 bg-red-950/20' : ''
+                  action.type === 'INSTITUTION' ? 'ring-1 ring-red-500/30 bg-red-950/20' : ''
                   }`}
               >
                 <div className="relative z-10">
                   <div className="flex justify-between items-start mb-2">
                     <span className={`text-[10px] font-bold px-2 py-0.5 rounded uppercase ${action.type === 'CAMPAIGN' ? 'bg-amber-900/50 text-amber-400' :
-                        action.type === 'GOVERNANCE' ? 'bg-green-900/50 text-green-400' :
-                          action.type === 'ATTACK' ? 'bg-red-900/50 text-red-400' :
-                            action.type === 'INSTITUTION' ? 'bg-slate-700 text-white border border-slate-500' :
-                              'bg-slate-700 text-slate-300'
+                      action.type === 'GOVERNANCE' ? 'bg-green-900/50 text-green-400' :
+                        action.type === 'ATTACK' ? 'bg-red-900/50 text-red-400' :
+                          action.type === 'INSTITUTION' ? 'bg-slate-700 text-white border border-slate-500' :
+                            'bg-slate-700 text-slate-300'
                       }`}>
                       {action.type}
                     </span>
@@ -391,8 +419,8 @@ const GameSession: React.FC = () => {
                         const isAddressed = gameState.playerState.agenda.includes(demandId);
                         return (
                           <span key={demandId} className={`text-[10px] px-1.5 py-0.5 rounded border ${isAddressed
-                              ? 'bg-green-900/30 border-green-700 text-green-400'
-                              : 'bg-slate-900 border-slate-700 text-slate-500'
+                            ? 'bg-green-900/30 border-green-700 text-green-400'
+                            : 'bg-slate-900 border-slate-700 text-slate-500'
                             }`}>
                             {issue?.name || demandId}
                           </span>

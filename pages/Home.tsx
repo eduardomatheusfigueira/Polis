@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { getNews, getRankings } from '../services/dataService';
+import { getLiveNews } from '../services/firestoreService';
+import { getRankings } from '../services/dataService';
 import { NewsItem, RankingItem } from '../types';
 import Button from '../components/Button';
 import { Icons } from '../constants';
@@ -11,14 +12,20 @@ const Home: React.FC = () => {
   const [rankings, setRankings] = useState<RankingItem[]>([]);
 
   useEffect(() => {
-    // Load mock data
-    setNews(getNews());
+    // Subscribe to Live News
+    const unsubscribeNews = getLiveNews((items) => {
+      setNews(items);
+    });
+
+    // Load static rankings for now
     setRankings(getRankings());
+
+    return () => unsubscribeNews();
   }, []);
 
   return (
     <div className="space-y-6">
-      
+
       {/* Welcome / Quick Actions */}
       <div className="bg-gradient-to-r from-amber-600 to-amber-800 rounded-xl p-6 shadow-lg text-white">
         <div className="flex flex-col md:flex-row justify-between items-center gap-4">
@@ -36,7 +43,7 @@ const Home: React.FC = () => {
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        
+
         {/* News Feed Widget */}
         <div className="lg:col-span-2 space-y-4">
           <div className="flex items-center justify-between">
@@ -50,11 +57,10 @@ const Home: React.FC = () => {
             {news.map(item => (
               <div key={item.id} className="bg-slate-900 border border-slate-800 p-4 rounded-lg hover:border-slate-700 transition-colors">
                 <div className="flex justify-between items-start mb-2">
-                  <span className={`text-xs font-bold px-2 py-1 rounded ${
-                    item.category === 'SCANDAL' ? 'bg-red-900/50 text-red-400' :
-                    item.category === 'ECONOMY' ? 'bg-blue-900/50 text-blue-400' :
-                    'bg-slate-800 text-slate-400'
-                  }`}>
+                  <span className={`text-xs font-bold px-2 py-1 rounded ${item.category === 'SCANDAL' ? 'bg-red-900/50 text-red-400' :
+                      item.category === 'ECONOMY' ? 'bg-blue-900/50 text-blue-400' :
+                        'bg-slate-800 text-slate-400'
+                    }`}>
                     {item.category}
                   </span>
                   <span className="text-xs text-slate-500">{item.date}</span>
@@ -75,12 +81,11 @@ const Home: React.FC = () => {
             {rankings.map((player, index) => (
               <div key={index} className="flex items-center justify-between p-4 border-b border-slate-800 last:border-0 hover:bg-slate-800/50 transition-colors">
                 <div className="flex items-center gap-3">
-                  <span className={`w-6 h-6 flex items-center justify-center rounded-full text-xs font-bold ${
-                    index === 0 ? 'bg-amber-500 text-black' :
-                    index === 1 ? 'bg-slate-400 text-black' :
-                    index === 2 ? 'bg-amber-700 text-white' :
-                    'bg-slate-800 text-slate-500'
-                  }`}>
+                  <span className={`w-6 h-6 flex items-center justify-center rounded-full text-xs font-bold ${index === 0 ? 'bg-amber-500 text-black' :
+                      index === 1 ? 'bg-slate-400 text-black' :
+                        index === 2 ? 'bg-amber-700 text-white' :
+                          'bg-slate-800 text-slate-500'
+                    }`}>
                     {player.rank}
                   </span>
                   <div>

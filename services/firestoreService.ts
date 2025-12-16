@@ -11,10 +11,11 @@ import {
     addDoc,
     serverTimestamp,
     orderBy,
-    writeBatch
+    writeBatch,
+    deleteDoc
 } from 'firebase/firestore';
 import { db } from './firebase';
-import { User, GameRoom, GameSessionState, Character, PoliticalParty, Archetype } from '../types';
+import { User, GameRoom, GameSessionState, Character, PoliticalParty, Archetype, NewsItem } from '../types';
 
 // Collection References
 const USERS_COLLECTION = 'users';
@@ -22,6 +23,31 @@ const ROOMS_COLLECTION = 'rooms';
 const SESSIONS_COLLECTION = 'sessions';
 const PARTIES_COLLECTION = 'parties';
 const ARCHETYPES_COLLECTION = 'archetypes';
+const NEWS_COLLECTION = 'news';
+
+// --- NEWS MANAGEMENT ---
+
+export const getLiveNews = (callback: (news: NewsItem[]) => void) => {
+    const q = query(collection(db, NEWS_COLLECTION), orderBy("createdAt", "desc")); // Assuming createdAt field
+    return onSnapshot(q, (snapshot) => {
+        const newsItems: NewsItem[] = [];
+        snapshot.forEach((doc) => {
+            newsItems.push({ id: doc.id, ...doc.data() } as NewsItem);
+        });
+        callback(newsItems);
+    });
+};
+
+export const addNews = async (news: Omit<NewsItem, 'id'>): Promise<void> => {
+    await addDoc(collection(db, NEWS_COLLECTION), {
+        ...news,
+        createdAt: serverTimestamp()
+    });
+};
+
+export const deleteNews = async (newsId: string): Promise<void> => {
+    await deleteDoc(doc(db, NEWS_COLLECTION, newsId));
+};
 
 // --- USER MANAGEMENT ---
 

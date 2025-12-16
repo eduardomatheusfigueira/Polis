@@ -15,10 +15,17 @@ const firebaseConfig = {
 };
 
 // Initialize Firebase
+import { initializeFirestore } from "firebase/firestore";
+
+// ... (imports remain)
 const app = initializeApp(firebaseConfig);
 const analytics = getAnalytics(app);
 const auth = getAuth(app);
-const db = getFirestore(app);
+
+// Initialize Firestore with settings to avoid QUIC errors
+const db = initializeFirestore(app, {
+  experimentalForceLongPolling: true,
+});
 const googleProvider = new GoogleAuthProvider();
 
 export { app, analytics, auth, db, googleProvider };

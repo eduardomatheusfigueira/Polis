@@ -77,22 +77,21 @@ const App: React.FC = () => {
     try {
       let existingUser = await getUserByUsername(username);
 
+      // Admin verification logic
+      const adminHandles = ['eduardomatheusfigueira'];
+      const isOwner = adminHandles.includes(username.toLowerCase()) ||
+        (additionalData?.email && adminHandles.includes(additionalData.email.split('@')[0].toLowerCase()));
+
+      const expectedRole: UserRole = isOwner ? 'ADMIN' : 'PLAYER';
+
       if (!existingUser) {
         // Create new user
-
-        // Determine Role
-        const adminHandles = ['eduardomatheusfigueira'];
-        const isOwner = adminHandles.includes(username.toLowerCase()) ||
-          (additionalData?.email && adminHandles.includes(additionalData.email.split('@')[0].toLowerCase()));
-
-        const role: UserRole = isOwner ? 'ADMIN' : 'PLAYER';
-
         const newUser: User = {
           id: 'u_' + Math.floor(Math.random() * 1000000), // Better ID gen
           username: username,
           fullName: additionalData?.fullName || username.charAt(0).toUpperCase() + username.slice(1),
           email: additionalData?.email || `${username}@polis.game`,
-          role: role,
+          role: expectedRole,
           avatarUrl: additionalData?.avatarUrl,
           level: 1,
           influence: 100,
@@ -101,9 +100,18 @@ const App: React.FC = () => {
         };
         await createUser(newUser);
         existingUser = newUser;
-      } else if (additionalData) {
-        // Optional: Update existing user with new Google info if missing?
-        // For now, let's just log them in.
+      } else {
+        // Update existing user if role is missing or needs upgrade to Admin
+        if (isOwner && existingUser.role !== 'ADMIN') {
+          console.log("Upgrading user to ADMIN...");
+          existingUser.role = 'ADMIN';
+          await updateUser(existingUser);
+        }
+        // Ensure role exists if old record
+        if (!existingUser.role) {
+          existingUser.role = 'PLAYER';
+          await updateUser(existingUser);
+        }
       }
 
       setUser(existingUser);
